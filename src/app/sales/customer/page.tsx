@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import TicketSale from "../../components/sales/TicketSale";
 import BookSale from "@/app/components/sales/BookSale";
 import { CancelButton, OKButton } from "../../components/button/Buttons";
-import { TIMEOUT } from "dns";
-import { Book } from "lucide-react";
+
 
 export default function CustomerSales() {
   const router = useRouter();
