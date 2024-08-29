@@ -34,6 +34,7 @@ const CustomerCard = () => {
       <CardFooter>
         <p className="text-center w-full">購入画面へ進んでください</p>
       </CardFooter>
+      
     </Card>
   );
 };

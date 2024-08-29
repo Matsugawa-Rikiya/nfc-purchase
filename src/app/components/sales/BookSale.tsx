@@ -25,7 +25,7 @@ const BookSale: React.FC<BookSaleProps> = ({ book, setBook }) => {
         <CardHeader>
           <CardTitle className="text-center">セット</CardTitle>
           <CardDescription className="text-center text-lg">
-            3,000円/冊
+            12,000円/冊
           </CardDescription>
         </CardHeader>
         <CardContent>
