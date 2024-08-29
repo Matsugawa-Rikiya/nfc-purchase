@@ -63,7 +63,7 @@ const ConfirmPage = () => {
   const today = new Date().toLocaleDateString();
 
   const ticketPrice = 400; // チケットの単価
-  const bookPrice = 3000; // ブックの単価
+  const bookPrice = 10000; // ブックの単価
 
   // ticketとbookを数値に変換し、nullチェックを行う
   const ticketCount = ticket ? parseInt(ticket, 10) : 0;
