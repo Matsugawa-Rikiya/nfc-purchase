@@ -41,7 +41,7 @@ export async function putSales(userid: string, ticket: number, book: number) {
       `;
       results.push(bookResult);
     }
-
+  
     return results;
   } catch (error) {
     console.error("Error executing query:", error);
