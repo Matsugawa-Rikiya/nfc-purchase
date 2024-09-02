@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import TicketSale from "./TicketSale";
-
 import { OKButton } from "../button/Buttons";
 import BookSale from "./BookSale";
 import { useRouter } from "next/navigation";

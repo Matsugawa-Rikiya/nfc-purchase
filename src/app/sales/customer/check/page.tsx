@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import SalesPane from "@/app/components/sales/SalesPane";
 import React, { useState } from "react";
 
 import {
@@ -63,15 +64,13 @@ const checkpage = () => {
   const today = new Date().toLocaleDateString();
 
   const ticketPrice = 400; // チケットの単価
-  const bookPrice = 10000; // ブックの単価
 
   // ticketとbookを数値に変換し、nullチェックを行う
   const ticketCount = ticket ? parseInt(ticket, 10) : 0;
   const bookCount = book ? parseInt(book, 10) : 0;
 
   const ticketSubtotal = ticketCount * ticketPrice; // チケットの小計
-  const bookSubtotal = bookCount * bookPrice; // ブックの小計
-  const totalAmount = ticketSubtotal + bookSubtotal; // 合計金額
+  const totalAmount = ticketSubtotal; // 合計金額
 
   const handleOK = async () => {
     try {
@@ -118,8 +117,6 @@ const checkpage = () => {
             <div className="flex w-full">
               <div className="flex flex-col w-1/3 text-right space-y-10">
                 <p>お名前:</p>
-                <p>社員ID:</p>
-                <p>カードID:</p>
               </div>
               <div className="flex flex-col w-2/3 text-left space-y-10">
                 <p className="pl-10 font-bold">{name}</p>
@@ -146,16 +143,6 @@ const checkpage = () => {
                 <td className="border px-4 py-2">{ticket}枚</td>
                 <td className="border px-4 py-2">
                   {ticketSubtotal.toLocaleString()}円
-                </td>
-              </tr>
-              <tr>
-                <td className="border px-4 py-2">ブック</td>
-                <td className="border px-4 py-2">
-                  {bookPrice.toLocaleString()}円
-                </td>
-                <td className="border px-4 py-2">{book}冊</td>
-                <td className="border px-4 py-2">
-                  {bookSubtotal.toLocaleString()}円
                 </td>
               </tr>
             </tbody>
