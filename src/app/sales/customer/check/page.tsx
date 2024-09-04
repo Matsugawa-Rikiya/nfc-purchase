@@ -26,14 +26,12 @@ const CheckPage = () => {
   const [idm, setIdm] = useState<string | undefined>("");
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
-  const [showMessage, setShowMessage] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   const { toast } = useToast();
 
   const [employeeName, setEmployeeName] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null); // userIdを追加
   const [isFetching, setIsFetching] = useState<boolean>(false);
 
   // NFCカードをスキャンしてユーザー情報を取得
@@ -50,8 +48,7 @@ const CheckPage = () => {
         if (userData && userData.length > 0) {
           setEmployeeName(userData[0].name);
           setEmployeeId(userData[0].userid);
-          setUserId(userData[0].userid);  // userIdを設定
-          
+
           if (userData[0].is_admin) {
             setIsAdmin(true);
             setIsConfirmed(true); // OKボタンを表示する
@@ -88,18 +85,17 @@ const CheckPage = () => {
   const ticketSubtotal = ticketCount * ticketPrice;
   const totalAmount = ticketSubtotal;
 
-  // データベースにデータを登録する処理
+  // 購入完了後にダイアログを表示し、OKが押されたら遷移する処理
   const handleOK = async () => {
     try {
-      setShowMessage(true); // メッセージを表示
-      console.log("Sending data to DB:", name, ticketCount, employeeName, employeeId);  // データ確認用ログ
-  
       // 必要なデータが揃っているか確認
       if (name && employeeName && employeeId) {
         try {
-          // user_idに0を渡し、buyer_nameにnameを渡す
           await putSoldSeparately(name, ticketCount, employeeName, employeeId);
-          router.push("/sales");
+          const confirmed = window.confirm("ご購入ありがとうございました。OKを押して続行してください。");
+          if (confirmed) {
+            router.push("/sales");
+          }
         } catch (error) {
           console.error("Error recording data:", error);
           toast({
@@ -118,7 +114,7 @@ const CheckPage = () => {
       console.error("DB Error:", e);
     }
   };
-              
+  
   const handleCancel = () => {
     router.back();
   };
@@ -222,13 +218,6 @@ const CheckPage = () => {
           </Card>
         </div>
       </div>
-      {showMessage && (
-        <div className="w-full text-center text-3xl ">
-          ご購入ありがとうございました。
-          <br />
-          またのご利用をお待ちしております。
-        </div>
-      )}
     </>
   );
 };
