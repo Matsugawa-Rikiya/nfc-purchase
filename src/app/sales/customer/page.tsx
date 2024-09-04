@@ -7,12 +7,12 @@ import { CancelButton, OKButton } from "../../components/button/Buttons";
 
 export default function CustomerSales() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [userid, setUserid] = useState("");
   const [ticket, setTicket] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleNext = () => {
-    if (name.trim() === "") {
+    if (userid.trim() === "") {
       setErrorMessage("名前（社員ID）を入力してください。");
       return;
     }
@@ -20,15 +20,12 @@ export default function CustomerSales() {
       setErrorMessage("チケットを1つ以上選択してください。");
       return;
     }
-
+  
     setErrorMessage(null); // エラーをクリア
-    const url = `/sales/customer/check?name=${encodeURIComponent(
-      name
-    )}&ticket=${ticket}`;
+    const url = `/sales/customer/check?name=${encodeURIComponent(userid)}&ticket=${ticket}`;
     router.push(url);
-        router.push(url);
   };
-
+  
   const handleCancel = () => {
     router.push("/sales");
   };
@@ -44,8 +41,8 @@ export default function CustomerSales() {
       {/* 名前入力欄 */}
       <input
         type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        value={userid}
+        onChange={(e) => setUserid(e.target.value)}
         className="w-full text-xl p-3 border rounded-md mb-5"
         placeholder="名前（社員ID）を入力してください"
       />

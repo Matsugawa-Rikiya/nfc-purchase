@@ -1,9 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import SalesPane from "@/app/components/sales/SalesPane";
 import React, { useState } from "react";
-
 import {
   Card,
   CardContent,
@@ -12,74 +10,95 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { HiOutlineIdentification } from "react-icons/hi2";
-import {
-  CancelButton,
-  CommitButton,
-  OKButton,
-} from "@/app/components/button/Buttons";
+import { CancelButton, CommitButton, OKButton } from "@/app/components/button/Buttons";
 import { getIDmStr } from "@/app/lib/nfc/rcs300.mjs";
 import { useToast } from "@/components/ui/use-toast";
-import { set } from "react-hook-form";
-import { putSales } from "@/app/sql/sqls";
+import { putSoldSeparately, getUserByNfcId } from "@/app/sql/sqls";
 
-const checkpage = () => {
+const CheckPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const name = searchParams.get("name");
-  const userid = searchParams.get("userid");
-  const cardid = searchParams.get("cardid");
   const ticket = searchParams.get("ticket");
-  const book = searchParams.get("book");
 
   const [idm, setIdm] = useState<string | undefined>("");
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [showMessage, setShowMessage] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
   const { toast } = useToast();
 
+  const [employeeName, setEmployeeName] = useState<string | null>(null);
+  const [employeeId, setEmployeeId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null); // userIdを追加
+  const [isFetching, setIsFetching] = useState<boolean>(false);
+
+  // NFCカードをスキャンしてユーザー情報を取得
   const handleClick = async () => {
     setIsScanning(true);
     try {
-      await getIDmStr(navigator).then((idmString) => {
-        if (idmString) {
-          setIdm(idmString?.replace(/\s/g, ""));
-          setIsConfirmed(true);
+      const idmString = await getIDmStr(navigator);
+      if (idmString) {
+        const cleanedIdm = idmString.replace(/\s/g, "");
+        setIdm(cleanedIdm);
+        setIsFetching(true);
+        const userData = await getUserByNfcId(cleanedIdm);
+
+        if (userData && userData.length > 0) {
+          setEmployeeName(userData[0].name);
+          setEmployeeId(userData[0].userid);
+          setUserId(userData[0].userid);  // userIdを設定
+          
+          if (userData[0].is_admin) {
+            setIsAdmin(true);
+            setIsConfirmed(true); // OKボタンを表示する
+          } else {
+            setIsAdmin(false);
+          }
         } else {
-          setIdm(undefined);
           toast({
             title: "Error",
-            description: "IDmが取得できませんでした",
+            description: "販売者情報が見つかりませんでした",
           });
         }
-      });
+        setIsFetching(false);
+      } else {
+        toast({
+          title: "Error",
+          description: "IDmが取得できませんでした",
+        });
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Error during NFC scan:", e);
+      toast({
+        title: "Error",
+        description: "エラーが発生しました。もう一度お試しください。",
+      });
+    } finally {
+      setIsScanning(false);
     }
-    setIsScanning(false);
   };
 
   const today = new Date().toLocaleDateString();
-
   const ticketPrice = 400; // チケットの単価
-
-  // ticketとbookを数値に変換し、nullチェックを行う
   const ticketCount = ticket ? parseInt(ticket, 10) : 0;
-  const bookCount = book ? parseInt(book, 10) : 0;
+  const ticketSubtotal = ticketCount * ticketPrice;
+  const totalAmount = ticketSubtotal;
 
-  const ticketSubtotal = ticketCount * ticketPrice; // チケットの小計
-  const totalAmount = ticketSubtotal; // 合計金額
-
+  // データベースにデータを登録する処理
   const handleOK = async () => {
     try {
       setShowMessage(true); // メッセージを表示
-      // DB登録
-      if (userid) {
-        // useridがnullでないことを確認
+      console.log("Sending data to DB:", name, ticketCount, employeeName, employeeId);  // データ確認用ログ
+  
+      // 必要なデータが揃っているか確認
+      if (name && employeeName && employeeId) {
         try {
-          await putSales(userid, ticketCount, bookCount);
+          // user_idに0を渡し、buyer_nameにnameを渡す
+          await putSoldSeparately(name, ticketCount, employeeName, employeeId);
           router.push("/sales");
         } catch (error) {
           console.error("Error recording data:", error);
@@ -89,17 +108,17 @@ const checkpage = () => {
           });
         }
       } else {
-        console.error("userid is null");
+        console.error("必要な情報が不足しています");
         toast({
           title: "Error",
-          description: "ユーザーIDが無効です",
+          description: "必要な情報が無効です",
         });
       }
     } catch (e) {
-      console.error(e);
+      console.error("DB Error:", e);
     }
   };
-
+              
   const handleCancel = () => {
     router.back();
   };
@@ -117,11 +136,17 @@ const checkpage = () => {
             <div className="flex w-full">
               <div className="flex flex-col w-1/3 text-right space-y-10">
                 <p>お名前:</p>
+                <p>販売者ID:</p>
+                <p>販売者名:</p>
               </div>
               <div className="flex flex-col w-2/3 text-left space-y-10">
                 <p className="pl-10 font-bold">{name}</p>
-                <p className="pl-10 font-bold">{userid}</p>
-                <p className="pl-10">{cardid}</p>
+                {isAdmin && employeeName && employeeId && (
+                  <div className="pl-10 font-bold flex flex-col space-y-10">
+                    <p>{employeeId}</p>
+                    <p>{employeeName}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -158,7 +183,7 @@ const checkpage = () => {
             </tfoot>
           </table>
           <div className="flex w-full items-center justify-center space-x-10 mt-20">
-            {isConfirmed && (
+            {isConfirmed && isAdmin && (
               <OKButton className="w-1/2 py-10 text-2xl" onClick={handleOK}>
                 OK
               </OKButton>
@@ -186,7 +211,7 @@ const checkpage = () => {
               </div>
               <div className="flex justify-center mt-4">
                 {isScanning ? (
-                  <p>now scaning...</p>
+                  <p>now scanning...</p>
                 ) : (
                   <CommitButton onClick={handleClick} className="w-full">
                     SCAN
@@ -194,9 +219,6 @@ const checkpage = () => {
                 )}
               </div>
             </CardContent>
-            <CardFooter>
-              <p className="text-center w-full">{idm}</p>
-            </CardFooter>
           </Card>
         </div>
       </div>
@@ -211,4 +233,4 @@ const checkpage = () => {
   );
 };
 
-export default checkpage;
+export default CheckPage;
