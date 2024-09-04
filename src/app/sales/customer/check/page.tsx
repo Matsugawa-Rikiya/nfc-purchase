@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { HiOutlineIdentification } from "react-icons/hi2";
-import { CancelButton, CommitButton, OKButton } from "@/app/components/button/Buttons";
+import { CancelButton, OKButton } from "@/app/components/button/Buttons";
 import { getIDmStr } from "@/app/lib/nfc/rcs300.mjs";
 import { useToast } from "@/components/ui/use-toast";
 import { putSoldSeparately, getUserByNfcId } from "@/app/sql/sqls";
@@ -34,50 +34,54 @@ const CheckPage = () => {
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(false);
 
-  // NFCカードをスキャンしてユーザー情報を取得
-  const handleClick = async () => {
-    setIsScanning(true);
-    try {
-      const idmString = await getIDmStr(navigator);
-      if (idmString) {
-        const cleanedIdm = idmString.replace(/\s/g, "");
-        setIdm(cleanedIdm);
-        setIsFetching(true);
-        const userData = await getUserByNfcId(cleanedIdm);
+  // NFCカードを自動的にスキャンする
+  useEffect(() => {
+    const autoScan = async () => {
+      setIsScanning(true);
+      try {
+        const idmString = await getIDmStr(navigator); // NFCカードスキャン
+        if (idmString) {
+          const cleanedIdm = idmString.replace(/\s/g, "");
+          setIdm(cleanedIdm);
+          setIsFetching(true);
+          const userData = await getUserByNfcId(cleanedIdm); // 認証
 
-        if (userData && userData.length > 0) {
-          setEmployeeName(userData[0].name);
-          setEmployeeId(userData[0].userid);
+          if (userData && userData.length > 0) {
+            setEmployeeName(userData[0].name);
+            setEmployeeId(userData[0].userid);
 
-          if (userData[0].is_admin) {
-            setIsAdmin(true);
-            setIsConfirmed(true); // OKボタンを表示する
+            if (userData[0].is_admin) {
+              setIsAdmin(true);
+              setIsConfirmed(true); // OKボタンを表示する
+            } else {
+              setIsAdmin(false);
+            }
           } else {
-            setIsAdmin(false);
+            toast({
+              title: "Error",
+              description: "販売者情報が見つかりませんでした",
+            });
           }
+          setIsFetching(false);
         } else {
           toast({
             title: "Error",
-            description: "販売者情報が見つかりませんでした",
+            description: "IDmが取得できませんでした",
           });
         }
-        setIsFetching(false);
-      } else {
+      } catch (e) {
+        console.error("Error during NFC scan:", e);
         toast({
           title: "Error",
-          description: "IDmが取得できませんでした",
+          description: "エラーが発生しました。もう一度お試しください。",
         });
+      } finally {
+        setIsScanning(false);
       }
-    } catch (e) {
-      console.error("Error during NFC scan:", e);
-      toast({
-        title: "Error",
-        description: "エラーが発生しました。もう一度お試しください。",
-      });
-    } finally {
-      setIsScanning(false);
-    }
-  };
+    };
+
+    autoScan(); // ページが読み込まれたときに自動でスキャンを開始
+  }, []); // [] でページの初回レンダリング時に一度だけ実行
 
   const today = new Date().toLocaleDateString();
   const ticketPrice = 400; // チケットの単価
@@ -85,14 +89,14 @@ const CheckPage = () => {
   const ticketSubtotal = ticketCount * ticketPrice;
   const totalAmount = ticketSubtotal;
 
-  // 購入完了後にダイアログを表示し、OKが押されたら遷移する処理
   const handleOK = async () => {
     try {
-      // 必要なデータが揃っているか確認
       if (name && employeeName && employeeId) {
         try {
           await putSoldSeparately(name, ticketCount, employeeName, employeeId);
-          const confirmed = window.confirm("ご購入ありがとうございました。OKを押して続行してください。");
+          const confirmed = window.confirm(
+            "ご購入ありがとうございました。OKを押して続行してください。"
+          );
           if (confirmed) {
             router.push("/sales");
           }
@@ -114,13 +118,13 @@ const CheckPage = () => {
       console.error("DB Error:", e);
     }
   };
-  
+
   const handleCancel = () => {
     router.back();
   };
 
   return (
-    <>
+    <Suspense fallback={<div>Loading...</div>}>
       <div className="flex w-full p-10 space-x-5">
         <div className="flex flex-col w-1/2 items-center border-2 p-5">
           <h1 className="text-5xl font-bold">
@@ -198,27 +202,18 @@ const CheckPage = () => {
             <CardHeader>
               <CardTitle className="text-center">Confirmation</CardTitle>
               <CardDescription className="text-center text-sm">
-                承認カードをかざしてください
+                NFCカードをかざしてください
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center border-2 rounded-lg py-10">
                 <HiOutlineIdentification className="text-9xl" />
               </div>
-              <div className="flex justify-center mt-4">
-                {isScanning ? (
-                  <p>now scanning...</p>
-                ) : (
-                  <CommitButton onClick={handleClick} className="w-full">
-                    SCAN
-                  </CommitButton>
-                )}
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </>
+    </Suspense>
   );
 };
 

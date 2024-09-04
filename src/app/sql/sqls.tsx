@@ -22,6 +22,23 @@ export async function putUser(name: string, userid: string, cardid: string) {
   }
 }
 
+// TypeScriptにNFC APIの型を教えるための型定義を追加します
+interface NDEFReadingEvent extends Event {
+  serialNumber: string;
+}
+
+interface NDEFReader {
+  scan(): Promise<void>;
+  onreading: ((event: NDEFReadingEvent) => void) | null;
+  onerror: ((error: Event) => void) | null;
+}
+
+interface Window {
+  NDEFReader: {
+    new (): NDEFReader;
+  };
+}
+
 export async function putSales(userid: string, ticket: number, book: number) {
   try {
     const results = [];
@@ -49,10 +66,15 @@ export async function putSales(userid: string, ticket: number, book: number) {
   }
 }
 
-export async function putSoldSeparately(name: string, ticket: number, employeeName: string, employeeId: string) {
+export async function putSoldSeparately(
+  name: string,
+  ticket: number,
+  employeeName: string,
+  employeeId: string
+) {
   try {
     const results = [];
-    
+
     if (ticket > 0) {
       const ticketResult = await sql`
         INSERT INTO tbl_ticket_purchases (user_id, ticket_type, amount, buyer_name, seller_id)
