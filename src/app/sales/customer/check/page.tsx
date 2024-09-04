@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
@@ -19,6 +20,9 @@ import { putSoldSeparately, getUserByNfcId } from "@/app/sql/sqls";
 const CheckPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams(); // useSearchParams の呼び出し
+  const CheckPage = dynamic(() => import('./page'), {
+    ssr: false,  // サーバーサイドレンダリングを無効にする
+  });
 
   // サスペンスでラップする内容
   const name = searchParams.get("name");
