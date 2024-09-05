@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -29,64 +29,50 @@ const CheckPage = () => {
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(false);
 
-  // 検索パラメータをuseEffectで取得
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const paramName = searchParams.get("name");
-    const paramTicket = searchParams.get("ticket");
+  // NFCカードを手動でスキャンする関数
+  const handleScan = async () => {
+    setIsScanning(true);
+    try {
+      const idmString = await getIDmStr(navigator); // NFCカードスキャン
+      if (idmString) {
+        const cleanedIdm = idmString.replace(/\s/g, "");
+        setIdm(cleanedIdm);
+        setIsFetching(true);
+        const userData = await getUserByNfcId(cleanedIdm); // 認証
 
-    setName(paramName);
-    setTicket(paramTicket);
-  }, []);
+        if (userData && userData.length > 0) {
+          setEmployeeName(userData[0].name);
+          setEmployeeId(userData[0].userid);
 
-  // NFCカードを自動的にスキャンする
-  useEffect(() => {
-    const autoScan = async () => {
-      setIsScanning(true);
-      try {
-        const idmString = await getIDmStr(navigator); // NFCカードスキャン
-        if (idmString) {
-          const cleanedIdm = idmString.replace(/\s/g, "");
-          setIdm(cleanedIdm);
-          setIsFetching(true);
-          const userData = await getUserByNfcId(cleanedIdm); // 認証
-
-          if (userData && userData.length > 0) {
-            setEmployeeName(userData[0].name);
-            setEmployeeId(userData[0].userid);
-
-            if (userData[0].is_admin) {
-              setIsAdmin(true);
-              setIsConfirmed(true); // OKボタンを表示する
-            } else {
-              setIsAdmin(false);
-            }
+          if (userData[0].is_admin) {
+            setIsAdmin(true);
+            setIsConfirmed(true); // OKボタンを表示する
           } else {
-            toast({
-              title: "Error",
-              description: "販売者情報が見つかりませんでした",
-            });
+            setIsAdmin(false);
           }
-          setIsFetching(false);
         } else {
           toast({
             title: "Error",
-            description: "IDmが取得できませんでした",
+            description: "販売者情報が見つかりませんでした",
           });
         }
-      } catch (e) {
-        console.error("Error during NFC scan:", e);
+        setIsFetching(false);
+      } else {
         toast({
           title: "Error",
-          description: "エラーが発生しました。もう一度お試しください。",
+          description: "IDmが取得できませんでした",
         });
-      } finally {
-        setIsScanning(false);
       }
-    };
-
-    autoScan(); // ページが読み込まれたときに自動でスキャンを開始
-  }, []);
+    } catch (e) {
+      console.error("Error during NFC scan:", e);
+      toast({
+        title: "Error",
+        description: "エラーが発生しました。もう一度お試しください。",
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   const today = new Date().toLocaleDateString();
   const ticketPrice = 400; // チケットの単価
@@ -129,7 +115,7 @@ const CheckPage = () => {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <>
       <div className="flex w-full p-10 space-x-5">
         <div className="flex flex-col w-1/2 items-center border-2 p-5">
           <h1 className="text-5xl font-bold">
@@ -214,11 +200,16 @@ const CheckPage = () => {
               <div className="flex justify-center border-2 rounded-lg py-10">
                 <HiOutlineIdentification className="text-9xl" />
               </div>
+              <div className="flex justify-center mt-4">
+                <OKButton className="w-full py-10" onClick={handleScan}>
+                  スキャンを開始
+                </OKButton>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </Suspense>
+    </>
   );
 };
 
