@@ -1,7 +1,6 @@
-// CheckPage.tsx
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect, Suspense } from "react";
 import {
   Card,
@@ -18,22 +17,27 @@ import { putSoldSeparately, getUserByNfcId } from "@/app/sql/sqls";
 
 // コンポーネントの定義
 const CheckPage = () => {
-  const searchParams = useSearchParams();
   const router = useRouter();
-
-  const name = searchParams.get("name");
-  const ticket = searchParams.get("ticket");
-
+  const [name, setName] = useState<string | null>(null);
+  const [ticket, setTicket] = useState<string | null>(null);
   const [idm, setIdm] = useState<string | undefined>("");
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-
   const { toast } = useToast();
-
   const [employeeName, setEmployeeName] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(false);
+
+  // 検索パラメータをuseEffectで取得
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const paramName = searchParams.get("name");
+    const paramTicket = searchParams.get("ticket");
+
+    setName(paramName);
+    setTicket(paramTicket);
+  }, []);
 
   // NFCカードを自動的にスキャンする
   useEffect(() => {
@@ -82,7 +86,7 @@ const CheckPage = () => {
     };
 
     autoScan(); // ページが読み込まれたときに自動でスキャンを開始
-  }, []); // [] でページの初回レンダリング時に一度だけ実行
+  }, []);
 
   const today = new Date().toLocaleDateString();
   const ticketPrice = 400; // チケットの単価
